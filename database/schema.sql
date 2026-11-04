@@ -10,7 +10,6 @@ CREATE TABLE Customer (
     city VARCHAR(25),
     state VARCHAR(15),
     zip_code VARCHAR(10),
-    customer_type VARCHAR(20) NOT NULL
 );
 
 CREATE TABLE HomeCustomer (
