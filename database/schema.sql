@@ -35,7 +35,6 @@ CREATE TABLE BusinessCustomer (
 CREATE TABLE Region (
     region_id INT PRIMARY KEY,
     region_name VARCHAR(50) NOT NULL,
-    region_manager VARCHAR(50)
 );
 
 CREATE TABLE Store (
@@ -44,7 +43,6 @@ CREATE TABLE Store (
     city VARCHAR(25) NOT NULL,
     state VARCHAR(15) NOT NULL,
     zip_code VARCHAR(10) NOT NULL,
-    manager VARCHAR(50),
     region_id INT NOT NULL,
 
     FOREIGN KEY (region_id)
