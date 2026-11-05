@@ -51,8 +51,8 @@ CREATE TABLE Store (
         REFERENCES Region(region_id)
 );
 
-CREATE TABLE Salesperson (
-    salesperson_id INT PRIMARY KEY,
+CREATE TABLE Employee (
+    employee_id INT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     street VARCHAR(50),
     city VARCHAR(25),
@@ -103,14 +103,14 @@ CREATE TABLE Orders (
     order_date DATE NOT NULL,
     payment_method VARCHAR(30),
     customer_id INT NOT NULL,
-    salesperson_id INT,
+    employee_id INT,
     store_id INT NOT NULL,
 
     FOREIGN KEY (customer_id)
         REFERENCES Customer(customer_id),
 
-    FOREIGN KEY (salesperson_id)
-        REFERENCES Salesperson(salesperson_id),
+    FOREIGN KEY (employee_id)
+        REFERENCES Employee(employee_id),
 
     FOREIGN KEY (store_id)
         REFERENCES Store(store_id)
