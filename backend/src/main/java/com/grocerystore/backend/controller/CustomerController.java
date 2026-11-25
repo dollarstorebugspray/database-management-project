@@ -52,4 +52,14 @@ public class CustomerController {
 
         return customerService.createCustomer(request);
     }
+
+    // Update an existing customer
+    @PutMapping("/{customerId}")
+    public Customer updateCustomer(
+            @PathVariable Integer customerId,
+            @RequestBody CreateCustomerRequest request) {
+
+        return customerService.updateCustomer(customerId, request);
+    }
+
 }
