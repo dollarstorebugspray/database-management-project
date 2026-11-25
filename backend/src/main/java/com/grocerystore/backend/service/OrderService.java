@@ -190,6 +190,7 @@ public class OrderService {
         order.setCustomerId(request.customerId());
         order.setSalespersonId(request.salespersonId());
         order.setStoreId(request.storeId());
+	orderItem.setUnitCost(product.getCostPrice());
 
         ordersRepository.saveAndFlush(order);
 

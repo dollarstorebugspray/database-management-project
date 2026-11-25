@@ -1,6 +1,8 @@
 -- Grocery Store E-Commerce sample data
 -- Run database/schema.sql before this file.
--- This file is intended to be run once against empty tables.
+-- Run once against EMPTY tables created by the updated schema.sql.
+-- Cost values are HYPOTHETICAL SAMPLE WHOLESALE COSTS, not verified historical costs.
+-- This file inserts rows; it does not create tables.
 USE grocery_store;
 
 -- 1. Regions
@@ -33,16 +35,16 @@ INSERT INTO Salesperson
 
 -- 4. Customers: 6 home customers and 4 business customers
 INSERT INTO Customer (customer_id, name, street, city, state, zip_code, customer_type) VALUES
-(1, 'Emma Davis', '14 Hill Street', 'Pittsburgh', 'PA', '15213', 'home'),
-(2, 'Noah Martin', '25 Oak Avenue', 'Pittsburgh', 'PA', '15217', 'home'),
-(3, 'Olivia Brown', '36 River Road', 'Harrisburg', 'PA', '17101', 'home'),
-(4, 'Liam Johnson', '47 Pine Street', 'Reading', 'PA', '19601', 'home'),
-(5, 'Sophia Miller', '58 Walnut Lane', 'Philadelphia', 'PA', '19106', 'home'),
-(6, 'Ethan Moore', '69 Cedar Street', 'Pittsburgh', 'PA', '15222', 'home'),
-(7, 'Corner Cafe LLC', '100 Main Street', 'Pittsburgh', 'PA', '15222', 'business'),
-(8, 'Fresh Start Catering', '200 State Street', 'Harrisburg', 'PA', '17101', 'business'),
-(9, 'Downtown Deli Co', '300 Penn Street', 'Reading', 'PA', '19601', 'business'),
-(10, 'City Lunch Kitchen', '400 Market Street', 'Philadelphia', 'PA', '19106', 'business');
+(1, 'Emma Davis', '14 Hill Street', 'Pittsburgh', 'PA', '15213', 'Home'),
+(2, 'Noah Martin', '25 Oak Avenue', 'Pittsburgh', 'PA', '15217', 'Home'),
+(3, 'Olivia Brown', '36 River Road', 'Harrisburg', 'PA', '17101', 'Home'),
+(4, 'Liam Johnson', '47 Pine Street', 'Reading', 'PA', '19601', 'Home'),
+(5, 'Sophia Miller', '58 Walnut Lane', 'Philadelphia', 'PA', '19106', 'Home'),
+(6, 'Ethan Moore', '69 Cedar Street', 'Pittsburgh', 'PA', '15222', 'Home'),
+(7, 'Corner Cafe LLC', '100 Main Street', 'Pittsburgh', 'PA', '15222', 'Business'),
+(8, 'Fresh Start Catering', '200 State Street', 'Harrisburg', 'PA', '17101', 'Business'),
+(9, 'Downtown Deli Co', '300 Penn Street', 'Reading', 'PA', '19601', 'Business'),
+(10, 'City Lunch Kitchen', '400 Market Street', 'Philadelphia', 'PA', '19106', 'Business');
 
 INSERT INTO HomeCustomer (customer_id, marital_status, gender, age, income) VALUES
 (1, 'Single', 'Female', 24, 42000.00),
@@ -66,28 +68,28 @@ INSERT INTO Category (category_id, category_name, description) VALUES
 (4, 'Meat', 'Fresh meat and poultry'),
 (5, 'Pantry', 'Shelf-stable foods and beverages');
 
--- 6. Products (price is the current listed price)
-INSERT INTO Product (product_id, product_name, brand, price, category_id) VALUES
-(101, 'Whole Milk 1 Gallon', 'Valley Farms', 4.29, 1),
-(102, 'Cheddar Cheese 8 oz', 'Valley Farms', 3.49, 1),
-(103, 'Greek Yogurt 5 oz', 'Morning Dairy', 1.29, 1),
-(104, 'Salted Butter 1 lb', 'Valley Farms', 4.79, 1),
-(105, 'Bananas 1 lb', 'Fresh Fields', 0.69, 2),
-(106, 'Apples 1 lb', 'Fresh Fields', 1.99, 2),
-(107, 'Romaine Lettuce', 'Green Basket', 2.49, 2),
-(108, 'Carrots 2 lb Bag', 'Green Basket', 2.29, 2),
-(109, 'Sandwich Bread', 'Daily Bake', 2.99, 3),
-(110, 'Bagels 6 Count', 'Daily Bake', 3.79, 3),
-(111, 'Croissants 4 Count', 'Daily Bake', 4.49, 3),
-(112, 'Dinner Rolls 12 Count', 'Daily Bake', 3.29, 3),
-(113, 'Chicken Breast 1 lb', 'Farm Select', 5.99, 4),
-(114, 'Ground Beef 1 lb', 'Farm Select', 6.49, 4),
-(115, 'Turkey Breast 1 lb', 'Farm Select', 5.49, 4),
-(116, 'Pork Chops 1 lb', 'Farm Select', 5.79, 4),
-(117, 'White Rice 2 lb', 'Pantry Choice', 3.99, 5),
-(118, 'Pasta 16 oz', 'Pantry Choice', 1.79, 5),
-(119, 'Tomato Sauce 24 oz', 'Pantry Choice', 2.19, 5),
-(120, 'Orange Juice 52 oz', 'Sun Valley', 4.59, 5);
+-- 6. Products (price = selling price; cost_price = hypothetical wholesale cost)
+INSERT INTO Product (product_id, product_name, brand, price, cost_price, category_id) VALUES
+(101, 'Whole Milk 1 Gallon', 'Valley Farms', 4.29, 2.75, 1),
+(102, 'Cheddar Cheese 8 oz', 'Valley Farms', 3.49, 2.10, 1),
+(103, 'Greek Yogurt 5 oz', 'Morning Dairy', 1.29, 0.74, 1),
+(104, 'Salted Butter 1 lb', 'Valley Farms', 4.79, 3.15, 1),
+(105, 'Bananas 1 lb', 'Fresh Fields', 0.69, 0.38, 2),
+(106, 'Apples 1 lb', 'Fresh Fields', 1.99, 1.10, 2),
+(107, 'Romaine Lettuce', 'Green Basket', 2.49, 1.35, 2),
+(108, 'Carrots 2 lb Bag', 'Green Basket', 2.29, 1.22, 2),
+(109, 'Sandwich Bread', 'Daily Bake', 2.99, 1.65, 3),
+(110, 'Bagels 6 Count', 'Daily Bake', 3.79, 2.14, 3),
+(111, 'Croissants 4 Count', 'Daily Bake', 4.49, 2.55, 3),
+(112, 'Dinner Rolls 12 Count', 'Daily Bake', 3.29, 1.85, 3),
+(113, 'Chicken Breast 1 lb', 'Farm Select', 5.99, 4.05, 4),
+(114, 'Ground Beef 1 lb', 'Farm Select', 6.49, 4.50, 4),
+(115, 'Turkey Breast 1 lb', 'Farm Select', 5.49, 3.85, 4),
+(116, 'Pork Chops 1 lb', 'Farm Select', 5.79, 4.05, 4),
+(117, 'White Rice 2 lb', 'Pantry Choice', 3.99, 2.28, 5),
+(118, 'Pasta 16 oz', 'Pantry Choice', 1.79, 0.96, 5),
+(119, 'Tomato Sauce 24 oz', 'Pantry Choice', 2.19, 1.18, 5),
+(120, 'Orange Juice 52 oz', 'Sun Valley', 4.59, 2.85, 5);
 
 -- 7. Current stock for each store/product pair (not stored in Product)
 -- These quantities are illustrative current balances, independent of the order history below.
@@ -117,18 +119,19 @@ INSERT INTO Orders (order_id, order_date, payment_method, customer_id, salespers
 (1009, '2026-10-09', 'Debit Card', 9, 8, 4),
 (1010, '2026-10-10', 'Credit Card', 10, NULL, 5);
 
--- 9. Order lines (sale_price is the historical price paid per unit)
-INSERT INTO OrderItem (order_id, product_id, quantity, sale_price) VALUES
-(1001, 101, 2, 4.29), (1001, 105, 3, 0.69), (1001, 109, 1, 2.99),
-(1002, 102, 1, 3.49), (1002, 106, 2, 1.99),
-(1003, 113, 2, 5.99), (1003, 108, 1, 2.29), (1003, 117, 1, 3.99),
-(1004, 114, 1, 6.49), (1004, 118, 2, 1.79),
-(1005, 120, 2, 4.59), (1005, 110, 1, 3.79), (1005, 103, 4, 1.29),
-(1006, 104, 1, 4.79), (1006, 111, 2, 4.49),
-(1007, 101, 5, 4.19), (1007, 109, 4, 2.99), (1007, 119, 6, 2.19),
-(1008, 113, 8, 5.79), (1008, 107, 5, 2.49),
-(1009, 115, 6, 5.49), (1009, 112, 4, 3.29),
-(1010, 116, 5, 5.79), (1010, 117, 4, 3.99), (1010, 120, 4, 4.59);
+-- 9. Order lines (sale_price = historical selling price; unit_cost = hypothetical historical cost)
+-- For demo data only, historical costs are assumed to match the initial wholesale costs.
+INSERT INTO OrderItem (order_id, product_id, quantity, sale_price, unit_cost) VALUES
+(1001, 101, 2, 4.29, 2.75), (1001, 105, 3, 0.69, 0.38), (1001, 109, 1, 2.99, 1.65),
+(1002, 102, 1, 3.49, 2.10), (1002, 106, 2, 1.99, 1.10),
+(1003, 113, 2, 5.99, 4.05), (1003, 108, 1, 2.29, 1.22), (1003, 117, 1, 3.99, 2.28),
+(1004, 114, 1, 6.49, 4.50), (1004, 118, 2, 1.79, 0.96),
+(1005, 120, 2, 4.59, 2.85), (1005, 110, 1, 3.79, 2.14), (1005, 103, 4, 1.29, 0.74),
+(1006, 104, 1, 4.79, 3.15), (1006, 111, 2, 4.49, 2.55),
+(1007, 101, 5, 4.19, 2.75), (1007, 109, 4, 2.99, 1.65), (1007, 119, 6, 2.19, 1.18),
+(1008, 113, 8, 5.79, 4.05), (1008, 107, 5, 2.49, 1.35),
+(1009, 115, 6, 5.49, 3.85), (1009, 112, 4, 3.29, 1.85),
+(1010, 116, 5, 5.79, 4.05), (1010, 117, 4, 3.99, 2.28), (1010, 120, 4, 4.59, 2.85);
 
 -- Optional sanity checks
 SELECT 'Region' AS table_name, COUNT(*) AS row_count FROM Region

@@ -24,6 +24,10 @@ public class Product {
     @Column(name = "category_id")
     private Integer categoryId;
 
+    @Column(name = "cost_price")
+    private BigDecimal costPrice;
+
+
     public Product() {
     }
 
@@ -46,4 +50,13 @@ public class Product {
     public Integer getCategoryId() {
         return categoryId;
     }
+
+public BigDecimal getCostPrice() {
+    return costPrice;
+}
+
+public void setCostPrice(BigDecimal costPrice) {
+    this.costPrice = costPrice;
+}
+
 }
