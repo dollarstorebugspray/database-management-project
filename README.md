@@ -6,7 +6,7 @@ INFSCI 2710 group project: a web-based grocery-store system backed by MySQL. The
 
 - **Database:** `database/schema.sql` creates the 11 tables; `database/sample-data.sql` inserts test records.
 - **Backend:** Java 25 + Spring Boot 4 + Maven, with a working `GET /api/products` endpoint.
-- **Frontend:** planned Angular application; not yet implemented.
+- **Frontend:**
 
 ## Technology
 
