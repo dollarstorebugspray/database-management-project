@@ -10,6 +10,7 @@ CREATE TABLE Customer (
     city VARCHAR(25),
     state VARCHAR(15),
     zip_code VARCHAR(10),
+    customer_type VARCHAR(20) NOT NULL
 );
 
 CREATE TABLE HomeCustomer (
@@ -35,6 +36,7 @@ CREATE TABLE BusinessCustomer (
 CREATE TABLE Region (
     region_id INT PRIMARY KEY,
     region_name VARCHAR(50) NOT NULL,
+    region_manager VARCHAR(50)
 );
 
 CREATE TABLE Store (
@@ -43,14 +45,15 @@ CREATE TABLE Store (
     city VARCHAR(25) NOT NULL,
     state VARCHAR(15) NOT NULL,
     zip_code VARCHAR(10) NOT NULL,
+    manager VARCHAR(50),
     region_id INT NOT NULL,
 
     FOREIGN KEY (region_id)
         REFERENCES Region(region_id)
 );
 
-CREATE TABLE Employee (
-    employee_id INT PRIMARY KEY,
+CREATE TABLE Salesperson (
+    salesperson_id INT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     street VARCHAR(50),
     city VARCHAR(25),
@@ -101,14 +104,14 @@ CREATE TABLE Orders (
     order_date DATE NOT NULL,
     payment_method VARCHAR(30),
     customer_id INT NOT NULL,
-    employee_id INT,
+    salesperson_id INT,
     store_id INT NOT NULL,
 
     FOREIGN KEY (customer_id)
         REFERENCES Customer(customer_id),
 
-    FOREIGN KEY (employee_id)
-        REFERENCES Employee(employee_id),
+    FOREIGN KEY (salesperson_id)
+        REFERENCES Salesperson(salesperson_id),
 
     FOREIGN KEY (store_id)
         REFERENCES Store(store_id)
