@@ -9,6 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.grocerystore.backend.repository.HomeCustomerRepository;
+import com.grocerystore.backend.repository.BusinessCustomerRepository;
+
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @RestController
@@ -17,14 +22,21 @@ public class CustomerController {
 
     private final CustomerRepository customerRepository;
     private final CustomerService customerService;
+    private final HomeCustomerRepository homeCustomerRepository;
+    private final BusinessCustomerRepository businessCustomerRepository;
 
     public CustomerController(
             CustomerRepository customerRepository,
-            CustomerService customerService) {
+            CustomerService customerService,
+            HomeCustomerRepository homeCustomerRepository,
+            BusinessCustomerRepository businessCustomerRepository) {
 
         this.customerRepository = customerRepository;
         this.customerService = customerService;
+        this.homeCustomerRepository = homeCustomerRepository;
+        this.businessCustomerRepository = businessCustomerRepository;
     }
+
 
     // Retrieve all customers
     @GetMapping
@@ -43,6 +55,46 @@ public class CustomerController {
                         "Customer not found"
                 ));
     }
+
+
+    @GetMapping("/{customerId}/details")
+    public Map<String, Object> getCustomerDetails(
+            @PathVariable Integer customerId) {
+
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Customer not found"
+                ));
+
+        Map<String, Object> details = new LinkedHashMap<>();
+
+        details.put("customerId", customer.getCustomerId());
+        details.put("name", customer.getName());
+        details.put("street", customer.getStreet());
+        details.put("city", customer.getCity());
+        details.put("state", customer.getState());
+        details.put("zipCode", customer.getZipCode());
+
+        String type = customer.getCustomerType();
+
+        String normalizedType =
+                "home".equalsIgnoreCase(type) ? "Home" :
+                "business".equalsIgnoreCase(type) ? "Business" : type;
+
+        details.put("customerType", normalizedType);
+
+        details.put("home", "Home".equals(normalizedType)
+                ? homeCustomerRepository.findById(customerId).orElse(null)
+                : null);
+
+        details.put("business", "Business".equals(normalizedType)
+                ? businessCustomerRepository.findById(customerId).orElse(null)
+                : null);
+
+        return details;
+    }
+
 
     // Create a new customer
     @PostMapping
