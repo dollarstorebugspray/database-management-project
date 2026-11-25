@@ -1,0 +1,25 @@
+# Java / Maven
+backend/target/
+*.class
+*.log
+
+# Angular / Node (when frontend is added)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Local IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-secret.properties
+
+# Keep Maven wrapper configuration and binaries in source control.
