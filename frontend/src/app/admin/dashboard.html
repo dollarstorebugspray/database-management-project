@@ -1,0 +1,261 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Reports</h1>
+      <p>{{ scopeLabel() }}, cancelled orders not counted</p>
+    </div>
+  </div>
+
+  <section class="toolbar" aria-label="Report filters">
+    <div class="field">
+      Period
+      <div class="segmented">
+        @for (option of presets; track option.id) {
+          <button type="button" [class.active]="preset() === option.id" (click)="preset.set(option.id)">{{ option.label }}</button>
+        }
+      </div>
+    </div>
+    @if (preset() === 'custom') {
+      <label class="field">
+        From
+        <input type="date" [ngModel]="customFrom()" (ngModelChange)="customFrom.set($event)">
+      </label>
+      <label class="field">
+        To
+        <input type="date" [ngModel]="customTo()" (ngModelChange)="customTo.set($event)">
+      </label>
+    }
+    <label class="field">
+      Region
+      <select [ngModel]="regionId()" (ngModelChange)="setRegion($event)">
+        <option [ngValue]="null">All regions</option>
+        @for (region of regions(); track region.regionId) {
+          <option [ngValue]="region.regionId">{{ region.regionName }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      Store
+      <select [ngModel]="storeId()" (ngModelChange)="storeId.set($event)">
+        <option [ngValue]="null">All stores</option>
+        @for (store of storesInRegion(); track store.storeId) {
+          <option [ngValue]="store.storeId">#{{ store.storeId }} {{ store.city }}</option>
+        }
+      </select>
+    </label>
+    <button class="btn btn-ghost" type="button" (click)="resetFilters()">Reset</button>
+  </section>
+
+  @if (rangeError()) {
+    <div class="notice error">{{ rangeError() }}</div>
+  }
+  @if (error()) {
+    <div class="notice error">{{ error() }}</div>
+  }
+
+  @if (data(); as report) {
+    <div class="dashboard" [class.refreshing]="loading()">
+      <section class="kpis card" aria-label="Totals">
+        <div><span>Sales</span><strong>{{ money(report.overview.revenue) }}</strong></div>
+        <div><span>Collected</span><strong>{{ money(report.overview.collected) }}</strong></div>
+        <div><span>Profit</span><strong>{{ money(report.overview.profit) }}</strong></div>
+        <div><span>Orders</span><strong>{{ count(report.overview.orderCount) }}</strong></div>
+        <div><span>Average order</span><strong>{{ money(report.overview.averageOrderValue) }}</strong></div>
+        <div><span>Units sold</span><strong>{{ count(report.overview.unitsSold) }}</strong></div>
+        <div><span>Customers</span><strong>{{ count(report.overview.customerCount) }}</strong></div>
+        <div><span>Cancelled orders</span><strong>{{ count(report.overview.cancelledOrders) }}</strong></div>
+      </section>
+      <p class="small muted">Sales counts every order that is not cancelled. Collected counts only orders that have been paid (paid, processing or completed); the rest is still waiting for payment.</p>
+
+      <div class="grid-2">
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Sales by month</h2>
+          </div>
+          <app-column-chart
+            [data]="monthlyChart()"
+            [tickFormat]="money0"
+            ariaLabel="Sales by month"
+            labelHeader="Month"
+            valueHeader="Sales" />
+        </section>
+
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Sales by category</h2>
+          </div>
+          <app-bar-list [data]="categoryChart()" ariaLabel="Sales by category" labelHeader="Category" valueHeader="Sales" />
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Sales by region</h2>
+          </div>
+          <app-bar-list [data]="regionChart()" ariaLabel="Sales by region" labelHeader="Region" valueHeader="Sales" />
+        </section>
+
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Sales by store</h2>
+          </div>
+          <app-bar-list [data]="storeChart()" ariaLabel="Sales by store" labelHeader="Store" valueHeader="Sales" />
+        </section>
+      </div>
+
+      <section class="card card-pad">
+        <div class="card-head">
+          <div>
+            <h2>Sales and profit by product</h2>
+            <p>Profit = sale price minus the cost of the latest delivery before the sale.</p>
+          </div>
+          <label class="field inline">
+            Sort by
+            <select [ngModel]="productSort()" (ngModelChange)="productSort.set($event)">
+              <option value="revenue">Sales</option>
+              <option value="unitsSold">Units sold</option>
+              <option value="profit">Profit</option>
+              <option value="productName">Name</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th class="num">Units</th>
+                <th class="num">Orders</th>
+                <th class="num">Sales</th>
+                <th class="num">Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of productRows(); track row.productId) {
+                <tr>
+                  <td>{{ row.productName }}<span class="sub">{{ row.brand || '-' }}</span></td>
+                  <td>{{ row.categoryName }}</td>
+                  <td class="num">{{ row.unitsSold | number }}</td>
+                  <td class="num">{{ row.orderCount | number }}</td>
+                  <td class="num">{{ row.revenue | currency }}</td>
+                  <td class="num">{{ row.profit | currency }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="row more">
+          <button class="link-btn" type="button" (click)="showAllProducts.set(!showAllProducts())">
+            {{ showAllProducts() ? 'Show top 12' : 'Show all ' + report.products.length + ' products' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="card card-pad">
+        <div class="card-head">
+          <div>
+            <h2>Business customers by units bought</h2>
+            <p>{{ buyers()?.subject }}</p>
+          </div>
+          <label class="field inline">
+            Product
+            <select [ngModel]="buyerSubject()" (ngModelChange)="buyerSubject.set($event)">
+              <option value="all">All products</option>
+              <optgroup label="Categories">
+                @for (category of catalog.categories(); track category.categoryId) {
+                  <option [value]="'category:' + category.categoryId">{{ category.categoryName }}</option>
+                }
+              </optgroup>
+              <optgroup label="Products">
+                @for (product of productOptions(); track product.productId) {
+                  <option [value]="'product:' + product.productId">{{ product.productName }}</option>
+                }
+              </optgroup>
+            </select>
+          </label>
+        </div>
+        <div class="buyers" [class.refreshing]="buyersLoading()">
+          <app-bar-list [data]="buyerChart()" ariaLabel="Units bought by business" labelHeader="Business" valueHeader="Units" />
+          @if (buyers(); as result) {
+            <div>
+              <h3 class="minor">By type of business</h3>
+              <table class="table">
+                <thead>
+                  <tr><th>Business type</th><th class="num">Buyers</th><th class="num">Units</th><th class="num">Spent</th></tr>
+                </thead>
+                <tbody>
+                  @for (row of result.byBusinessCategory; track row.businessCategory) {
+                    <tr>
+                      <td>{{ row.businessCategory }}</td>
+                      <td class="num">{{ row.customerCount }}</td>
+                      <td class="num">{{ row.unitsBought | number }}</td>
+                      <td class="num">{{ row.totalSpent | currency }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="4" class="muted">No business purchases in this period.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </section>
+
+      <div class="grid-2">
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Salespeople (top 10 by sales)</h2>
+          </div>
+          <app-bar-list [data]="salespeopleChart()" ariaLabel="Sales by salesperson" labelHeader="Salesperson" valueHeader="Sales" />
+        </section>
+
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Top customers</h2>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th>Customer</th><th class="num">Orders</th><th class="num">Spent</th><th class="num">Last order</th></tr>
+              </thead>
+              <tbody>
+                @for (row of report.topCustomers; track row.customerId) {
+                  <tr>
+                    <td>{{ row.name }}<span class="sub">{{ row.customerType === 'HOME' ? 'Home' : 'Business' }}</span></td>
+                    <td class="num">{{ row.orderCount }}</td>
+                    <td class="num">{{ row.totalSpent | currency }}</td>
+                    <td class="num">{{ row.lastOrderDate | date: 'MMM d' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Sales by customer type</h2>
+          </div>
+          <app-segment-bar [data]="customerTypeChart()" ariaLabel="Sales share by customer type" labelHeader="Customer type" valueHeader="Sales" />
+          <h3 class="minor">Home customers by age</h3>
+          <app-bar-list [data]="ageChart()" ariaLabel="Home customer sales by age band" labelHeader="Age" valueHeader="Sales" />
+          <h3 class="minor">Home customers by household income</h3>
+          <app-bar-list [data]="incomeChart()" ariaLabel="Home customer sales by income band" labelHeader="Income" valueHeader="Sales" />
+        </section>
+
+        <section class="card card-pad">
+          <div class="card-head">
+            <h2>Sales by payment method</h2>
+          </div>
+          <app-segment-bar [data]="paymentChart()" ariaLabel="Sales share by payment method" labelHeader="Payment method" valueHeader="Sales" />
+        </section>
+      </div>
+    </div>
+  } @else if (loading()) {
+    <p class="muted">Loading reports...</p>
+  }
+</div>

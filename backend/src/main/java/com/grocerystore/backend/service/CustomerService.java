@@ -1,323 +1,228 @@
 package com.grocerystore.backend.service;
 
-import com.grocerystore.backend.dto.CreateCustomerRequest;
-import com.grocerystore.backend.model.Customer;
-import com.grocerystore.backend.model.HomeCustomer;
-import com.grocerystore.backend.model.BusinessCustomer;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
-import com.grocerystore.backend.repository.CustomerRepository;
-import com.grocerystore.backend.repository.HomeCustomerRepository;
-import com.grocerystore.backend.repository.BusinessCustomerRepository;
-
-import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+
+import com.grocerystore.backend.dto.CustomerRequest;
+import com.grocerystore.backend.dto.CustomerResponse;
+import com.grocerystore.backend.exception.BadRequestException;
+import com.grocerystore.backend.exception.ResourceNotFoundException;
+import com.grocerystore.backend.util.Ids;
+import com.grocerystore.backend.util.Text;
 
 @Service
 public class CustomerService {
 
-    private final CustomerRepository customerRepository;
-    private final HomeCustomerRepository homeCustomerRepository;
-    private final BusinessCustomerRepository businessCustomerRepository;
+    private static final String SELECT_CUSTOMERS = """
+            SELECT c.customer_id, c.name, c.customer_type,
+                   c.street, c.city, c.state, c.zip_code,
+                   h.marital_status, h.gender, h.age, h.income,
+                   b.business_category, b.annual_income,
+                   COALESCE(stats.order_count, 0) AS order_count,
+                   COALESCE(stats.total_spent, 0) AS total_spent,
+                   stats.last_order_date,
+                   EXISTS (SELECT 1 FROM UserAccount a WHERE a.customer_id = c.customer_id) AS has_account
+            FROM Customer c
+            LEFT JOIN HomeCustomer h ON h.customer_id = c.customer_id
+            LEFT JOIN BusinessCustomer b ON b.customer_id = c.customer_id
+            LEFT JOIN (
+                SELECT o.customer_id,
+                       COUNT(DISTINCT o.order_id) AS order_count,
+                       SUM(oi.quantity * oi.sale_price) AS total_spent,
+                       MAX(o.order_date) AS last_order_date
+                FROM Orders o
+                JOIN OrderItem oi ON oi.order_id = o.order_id
+                WHERE o.order_status <> 'CANCELLED'
+                GROUP BY o.customer_id
+            ) stats ON stats.customer_id = c.customer_id
+            """;
 
-    public CustomerService(
-            CustomerRepository customerRepository,
-            HomeCustomerRepository homeCustomerRepository,
-            BusinessCustomerRepository businessCustomerRepository) {
+    private final JdbcTemplate jdbcTemplate;
+    private final RowMapper<CustomerResponse> customerMapper = this::mapCustomer;
 
-        this.customerRepository = customerRepository;
-        this.homeCustomerRepository = homeCustomerRepository;
-        this.businessCustomerRepository = businessCustomerRepository;
+    public CustomerService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-        @Transactional
-        public Customer createCustomer(CreateCustomerRequest request) {
+    @Transactional(readOnly = true)
+    public List<CustomerResponse> findAll() {
+        return findAll("", null);
+    }
 
-                // Validate general customer information
-                if (request == null || request.customerId() == null
-                        || request.name() == null || request.name().isBlank()) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Customer ID and name are required"
-                );
-                }
-
-                if (request.name().length() > 50) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Customer name cannot exceed 50 characters"
-                );
-                }
-
-                // Prevent duplicate customer IDs
-                if (customerRepository.existsById(request.customerId())) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT,
-                        "Customer ID already exists"
-                );
-                }
-
-                // Validate customer type and subtype information
-                String type = request.customerType();
-
-                if (!"Home".equals(type) && !"Business".equals(type)) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Customer type must be Home or Business"
-                );
-                }
-
-                if ("Home".equals(type)) {
-                if (request.home() == null || request.business() != null) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Home customer must have only home details"
-                        );
-                }
-
-                if (request.home().age() != null
-                        && request.home().age() < 0) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Age cannot be negative"
-                        );
-                }
-
-                if (request.home().income() != null
-                        && request.home().income().signum() < 0) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Income cannot be negative"
-                        );
-                }
-                }
-
-                if ("Business".equals(type)) {
-                if (request.business() == null || request.home() != null) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Business customer must have only business details"
-                        );
-                }
-
-                if (request.business().annualIncome() != null
-                        && request.business().annualIncome().signum() < 0) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Annual income cannot be negative"
-                        );
-                }
-                }
-
-                // Create the general customer
-                Customer customer = new Customer();
-
-                customer.setCustomerId(request.customerId());
-                customer.setName(request.name());
-                customer.setStreet(request.street());
-                customer.setCity(request.city());
-                customer.setState(request.state());
-                customer.setZipCode(request.zipCode());
-                customer.setCustomerType(type);
-
-                customerRepository.saveAndFlush(customer);
-
-                // Create the appropriate customer subtype
-                if ("Home".equals(type)) {
-
-                HomeCustomer home = new HomeCustomer();
-
-                home.setCustomerId(request.customerId());
-                home.setMaritalStatus(request.home().maritalStatus());
-                home.setGender(request.home().gender());
-                home.setAge(request.home().age());
-                home.setIncome(request.home().income());
-
-                homeCustomerRepository.save(home);
-
-                } else {
-
-                BusinessCustomer business = new BusinessCustomer();
-
-                business.setCustomerId(request.customerId());
-                business.setBusinessCategory(
-                        request.business().businessCategory()
-                );
-                business.setAnnualIncome(
-                        request.business().annualIncome()
-                );
-
-                businessCustomerRepository.save(business);
-                }
-
-                return customer;
+    @Transactional(readOnly = true)
+    public List<CustomerResponse> findAll(String search, String customerType) {
+        StringBuilder sql = new StringBuilder(SELECT_CUSTOMERS).append(" WHERE 1 = 1");
+        List<Object> args = new ArrayList<>();
+        String text = Text.trimToEmpty(search);
+        if (!text.isEmpty()) {
+            sql.append("""
+                     AND (c.name LIKE ? OR COALESCE(c.city, '') LIKE ?
+                          OR COALESCE(b.business_category, '') LIKE ?)
+                    """);
+            String pattern = Text.likePattern(text);
+            args.add(pattern);
+            args.add(pattern);
+            args.add(pattern);
         }
+        String type = Text.trimToNull(customerType);
+        if (type != null && !type.equalsIgnoreCase("ALL")) {
+            sql.append(" AND c.customer_type = ?");
+            args.add(type.toUpperCase(Locale.ROOT));
+        }
+        sql.append(" ORDER BY c.customer_id");
+        return jdbcTemplate.query(sql.toString(), customerMapper, args.toArray());
+    }
 
+    @Transactional(readOnly = true)
+    public CustomerResponse findById(Integer customerId) {
+        List<CustomerResponse> customers = jdbcTemplate.query(
+                SELECT_CUSTOMERS + " WHERE c.customer_id = ?",
+                customerMapper,
+                customerId);
 
+        if (customers.isEmpty()) {
+            throw new ResourceNotFoundException("Customer " + customerId + " was not found");
+        }
+        return customers.getFirst();
+    }
 
+    @Transactional
+    public CustomerResponse create(CustomerRequest request) {
+        // Validate customer type and subtype information
+        String customerType = normalizeAndValidate(request);
+        int customerId = Ids.next(jdbcTemplate, "Customer", "customer_id");
 
+        // Create the general customer
+        jdbcTemplate.update("""
+                INSERT INTO Customer
+                    (customer_id, name, street, city, state, zip_code, customer_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                customerId,
+                request.name().trim(),
+                Text.trimToNull(request.street()),
+                Text.trimToNull(request.city()),
+                Text.trimToNull(request.state()),
+                Text.trimToNull(request.zipCode()),
+                customerType);
 
+        // Create the appropriate customer subtype
+        insertCustomerDetails(customerId, customerType, request);
+        return findById(customerId);
+    }
 
-@Transactional
-public Customer updateCustomer(
-        Integer customerId,
-        CreateCustomerRequest request) {
-
+    @Transactional
+    public CustomerResponse update(Integer customerId, CustomerRequest request) {
         // Find the existing customer
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Customer not found"
-                ));
-
+        findById(customerId);
         // Validate the request
-        if (request == null || request.customerId() == null
-                || !customerId.equals(request.customerId())
-                || request.name() == null
-                || request.name().isBlank()
-                || request.name().length() > 50) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Invalid customer information"
-                );
-        }
-
-        // Do not allow changing customer types
-        if (!customer.getCustomerType().equals(request.customerType())) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Customer type cannot be changed"
-                );
-        }
+        String customerType = normalizeAndValidate(request);
 
         // Update general customer information
-        customer.setName(request.name());
-        customer.setStreet(request.street());
-        customer.setCity(request.city());
-        customer.setState(request.state());
-        customer.setZipCode(request.zipCode());
+        jdbcTemplate.update("""
+                UPDATE Customer
+                SET name = ?, street = ?, city = ?, state = ?, zip_code = ?, customer_type = ?
+                WHERE customer_id = ?
+                """,
+                request.name().trim(),
+                Text.trimToNull(request.street()),
+                Text.trimToNull(request.city()),
+                Text.trimToNull(request.state()),
+                Text.trimToNull(request.zipCode()),
+                customerType,
+                customerId);
 
-        if ("Home".equals(customer.getCustomerType())) {
+        jdbcTemplate.update("DELETE FROM HomeCustomer WHERE customer_id = ?", customerId);
+        jdbcTemplate.update("DELETE FROM BusinessCustomer WHERE customer_id = ?", customerId);
+        insertCustomerDetails(customerId, customerType, request);
 
-                if (request.home() == null || request.business() != null) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Home customer details are required"
-                );
-                }
-
-                if ((request.home().age() != null
-                        && request.home().age() < 0)
-                        || (request.home().income() != null
-                        && request.home().income().signum() < 0)) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Age and income cannot be negative"
-                );
-                }
-
-                HomeCustomer home = homeCustomerRepository.findById(customerId)
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.CONFLICT,
-                                "Home customer record is missing"
-                        ));
-
-                home.setMaritalStatus(request.home().maritalStatus());
-                home.setGender(request.home().gender());
-                home.setAge(request.home().age());
-                home.setIncome(request.home().income());
-
-                homeCustomerRepository.save(home);
-
-        } else if ("Business".equals(customer.getCustomerType())) {
-
-                if (request.business() == null || request.home() != null) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Business customer details are required"
-                );
-                }
-
-                if (request.business().annualIncome() != null
-                        && request.business().annualIncome().signum() < 0) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Annual income cannot be negative"
-                );
-                }
-
-                BusinessCustomer business =
-                        businessCustomerRepository.findById(customerId)
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.CONFLICT,
-                                "Business customer record is missing"
-                        ));
-
-                business.setBusinessCategory(
-                        request.business().businessCategory()
-                );
-
-                business.setAnnualIncome(
-                        request.business().annualIncome()
-                );
-
-                businessCustomerRepository.save(business);
-
-        } else {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT,
-                        "Invalid existing customer type"
-                );
-        }
-
-        return customerRepository.save(customer);
-        }
-
-
-
-
-
-@Transactional
-public void deleteCustomer(Integer customerId) {
-
-    // Find the customer
-    Customer customer = customerRepository.findById(customerId)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Customer not found"
-            ));
-
-    // Prevent deletion if the customer has existing orders
-    if (customerRepository.countOrdersByCustomerId(customerId) > 0) {
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Cannot delete a customer with existing orders"
-        );
+        return findById(customerId);
     }
 
-    // Delete the appropriate customer subtype first
-    if ("Home".equals(customer.getCustomerType())) {
-
-        homeCustomerRepository.deleteById(customerId);
-
-    } else if ("Business".equals(customer.getCustomerType())) {
-
-        businessCustomerRepository.deleteById(customerId);
-
-    } else {
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Invalid customer type"
-        );
+    @Transactional
+    public void delete(Integer customerId) {
+        // Find the customer
+        findById(customerId);
+        // Prevent deletion if the customer has existing orders
+        Integer orders = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM Orders WHERE customer_id = ?",
+                Integer.class,
+                customerId);
+        if (orders != null && orders > 0) {
+            throw new BadRequestException("A customer with orders cannot be deleted");
+        }
+        jdbcTemplate.update("DELETE FROM UserAccount WHERE customer_id = ?", customerId);
+        // Delete the appropriate customer subtype first
+        jdbcTemplate.update("DELETE FROM HomeCustomer WHERE customer_id = ?", customerId);
+        jdbcTemplate.update("DELETE FROM BusinessCustomer WHERE customer_id = ?", customerId);
+        // Delete the general customer record
+        jdbcTemplate.update("DELETE FROM Customer WHERE customer_id = ?", customerId);
     }
 
-    // Delete the general customer record
-    customerRepository.delete(customer);
-}
+    private String normalizeAndValidate(CustomerRequest request) {
+        String customerType = request.customerType().trim().toUpperCase(Locale.ROOT);
+        if (customerType.equals("BUSINESS") && Text.trimToNull(request.businessCategory()) == null) {
+            throw new BadRequestException("businessCategory is required for a business customer");
+        }
+        return customerType;
+    }
 
+    private void insertCustomerDetails(
+            Integer customerId,
+            String customerType,
+            CustomerRequest request) {
+        if (customerType.equals("HOME")) {
+            jdbcTemplate.update("""
+                    INSERT INTO HomeCustomer
+                        (customer_id, marital_status, gender, age, income)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    customerId,
+                    Text.trimToNull(request.maritalStatus()),
+                    Text.trimToNull(request.gender()),
+                    request.age(),
+                    request.income());
+            return;
+        }
 
+        jdbcTemplate.update("""
+                INSERT INTO BusinessCustomer
+                    (customer_id, business_category, annual_income)
+                VALUES (?, ?, ?)
+                """,
+                customerId,
+                request.businessCategory().trim(),
+                request.annualIncome());
+    }
+
+    private CustomerResponse mapCustomer(ResultSet resultSet, int rowNumber) throws SQLException {
+        Date lastOrder = resultSet.getDate("last_order_date");
+        return new CustomerResponse(
+                resultSet.getInt("customer_id"),
+                resultSet.getString("name"),
+                resultSet.getString("customer_type"),
+                resultSet.getString("street"),
+                resultSet.getString("city"),
+                resultSet.getString("state"),
+                resultSet.getString("zip_code"),
+                resultSet.getString("marital_status"),
+                resultSet.getString("gender"),
+                resultSet.getObject("age", Integer.class),
+                resultSet.getBigDecimal("income"),
+                resultSet.getString("business_category"),
+                resultSet.getBigDecimal("annual_income"),
+                resultSet.getInt("order_count"),
+                resultSet.getBigDecimal("total_spent"),
+                lastOrder == null ? null : lastOrder.toLocalDate(),
+                resultSet.getBoolean("has_account"));
+    }
 }

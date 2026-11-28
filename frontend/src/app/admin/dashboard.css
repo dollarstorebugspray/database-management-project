@@ -1,0 +1,76 @@
+.toolbar .field select,
+.toolbar .field input {
+  min-width: 150px;
+}
+
+.dashboard {
+  display: grid;
+  gap: 14px;
+}
+
+.refreshing {
+  opacity: 0.6;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.kpis div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border-right: 1px solid var(--line);
+}
+
+.kpis div:last-child {
+  border-right: 0;
+}
+
+.kpis span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.kpis strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.field.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field.inline select {
+  width: auto;
+  max-width: 260px;
+}
+
+.more {
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.buyers {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+}
+
+.minor {
+  margin: 16px 0 8px;
+  font-size: 14px;
+}
+
+.buyers .minor {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .buyers {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,132 @@
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(32, 38, 49, 0.45);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, 100vw);
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  transform: translateX(105%);
+  transition: transform 0.2s ease;
+  visibility: hidden;
+}
+
+.drawer.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-empty {
+  padding: 40px 18px;
+  text-align: center;
+}
+
+.lines {
+  flex: 1;
+  margin: 0;
+  padding: 0 18px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.line {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.line-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.line-text {
+  display: grid;
+}
+
+.thumb {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.line-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.line-bottom strong {
+  margin-left: auto;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+
+.stepper button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  font-size: 17px;
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+}
+
+.stepper span {
+  min-width: 26px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.checkout {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 15px;
+}
+
+.total strong {
+  font-size: 22px;
+}
+
+.wide {
+  width: 100%;
+}

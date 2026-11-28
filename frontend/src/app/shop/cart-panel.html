@@ -1,0 +1,98 @@
+@if (cart.open()) {
+  <div class="drawer-backdrop" (click)="close()"></div>
+}
+<aside class="drawer" [class.open]="cart.open()" aria-label="Shopping cart" [attr.aria-hidden]="!cart.open()" [attr.inert]="cart.open() ? null : ''">
+  <div class="drawer-head">
+    <div>
+      <h2>Cart</h2>
+      <span class="muted small">Store #{{ catalog.storeId() }} {{ catalog.store()?.city }}</span>
+    </div>
+    <button class="icon-btn" type="button" (click)="close()" aria-label="Close cart">×</button>
+  </div>
+
+  @if (cart.items().length === 0) {
+    <div class="drawer-empty">
+      <p>Your cart is empty.</p>
+      <p class="muted small">Add products from the shop to start an order.</p>
+    </div>
+  } @else {
+    <ul class="lines">
+      @for (item of cart.items(); track item.product.productId) {
+        <li class="line">
+          <div class="line-main">
+            @if (item.product.imageUrl) {
+              <img class="thumb" [src]="item.product.imageUrl" alt="">
+            }
+            <div class="line-text">
+              <strong>{{ item.product.productName }}</strong>
+              <span class="muted small">{{ item.product.price | currency }} each · {{ item.product.quantity }} available</span>
+            </div>
+          </div>
+          <div class="line-bottom">
+            <div class="stepper" role="group" [attr.aria-label]="'Quantity of ' + item.product.productName">
+              <button type="button" (click)="cart.setQuantity(item.product.productId, item.quantity - 1)" aria-label="Remove one">−</button>
+              <span>{{ item.quantity }}</span>
+              <button type="button" [disabled]="item.quantity >= item.product.quantity" (click)="cart.setQuantity(item.product.productId, item.quantity + 1)" aria-label="Add one">+</button>
+            </div>
+            <strong>{{ item.product.price * item.quantity | currency }}</strong>
+            <button class="btn btn-danger btn-sm" type="button" (click)="cart.remove(item.product.productId)">Remove</button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    <div class="checkout">
+      @if (!session.user()) {
+        <p class="notice info">Sign in or create an account to place your order.</p>
+        <button class="btn btn-primary wide" type="button" (click)="signIn()">Sign in to check out</button>
+      } @else {
+        @if (session.isStaff()) {
+          <label class="field">
+            Customer
+            <select [ngModel]="customerId()" (ngModelChange)="customerId.set($event)">
+              <option [ngValue]="null" disabled>Select a customer...</option>
+              @for (customer of customers(); track customer.customerId) {
+                <option [ngValue]="customer.customerId">
+                  {{ customer.name }} ({{ customer.customerType === 'HOME' ? 'Home' : 'Business' }})
+                </option>
+              }
+            </select>
+          </label>
+        } @else if (orderCustomer(); as me) {
+          <p class="small muted">Ordering as <strong>{{ me.name }}</strong> ({{ me.customerType === 'HOME' ? 'home' : 'business' }} customer)</p>
+        }
+
+        <label class="field">
+          Payment method
+          <select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
+            @for (method of paymentOptions(); track method) {
+              <option [value]="method">{{ method }}</option>
+            }
+          </select>
+          <span class="hint">
+            @switch (paymentMethod()) {
+              @case ('Cash at Pickup') { Pay when you collect the order. }
+              @case ('Business Invoice') { Billed to your business account. }
+              @default { Charged now; the order is marked paid. }
+            }
+          </span>
+        </label>
+
+        @if (storeHasNoStaff()) {
+          <div class="notice error">Store #{{ catalog.storeId() }} has no staff yet, so it can't take orders. Choose another store at the top of the page.</div>
+        }
+        @if (error()) {
+          <div class="notice error" role="alert">{{ error() }}</div>
+        }
+
+        <div class="total">
+          <span>Total ({{ cart.count() }} item{{ cart.count() === 1 ? '' : 's' }})</span>
+          <strong>{{ cart.total() | currency }}</strong>
+        </div>
+        <button class="btn btn-primary wide" type="button" [disabled]="placing() || storeHasNoStaff()" (click)="placeOrder()">
+          {{ placing() ? 'Placing order...' : (session.isStaff() ? 'Record sale' : 'Place order') }}
+        </button>
+      }
+    </div>
+  }
+</aside>

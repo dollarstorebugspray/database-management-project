@@ -1,0 +1,77 @@
+<header class="site-header">
+  <div class="header-bar">
+    <div class="brand-block">
+      <button class="brand" type="button" (click)="goHome()">Grocery Store</button>
+      <p class="tagline">Database project · online grocery ordering</p>
+    </div>
+
+    <label class="store-picker">
+      Store
+      <select [ngModel]="catalog.storeId()" (ngModelChange)="changeStore($event)">
+        @for (store of catalog.stores(); track store.storeId) {
+          <option [ngValue]="store.storeId">#{{ store.storeId }} {{ store.city }} - {{ store.street }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="account">
+      @if (session.user(); as user) {
+        <span class="who">{{ user.name }} ({{ roleLabel(user.role) }})</span>
+        <button class="btn btn-sm" type="button" (click)="session.logout()">Sign out</button>
+      } @else if (session.ready()) {
+        <button class="btn btn-sm" type="button" (click)="session.authDialog.set('login')">Sign in</button>
+        <button class="btn btn-sm" type="button" (click)="session.authDialog.set('register')">Register</button>
+      }
+      @if (view() === 'shop' || cart.count() > 0) {
+        <button class="btn btn-sm btn-primary" type="button" (click)="cart.open.set(true)">Cart ({{ cart.count() }})</button>
+      }
+    </div>
+  </div>
+
+  @if (session.allowedViews().length > 1) {
+    <nav class="main-nav" aria-label="Main navigation">
+      @for (item of session.allowedViews(); track item) {
+        <button
+          type="button"
+          [class.active]="view() === item"
+          [attr.aria-current]="view() === item ? 'page' : null"
+          (click)="nav.go(item)">
+          {{ labels[item] }}
+        </button>
+      }
+    </nav>
+  }
+</header>
+
+<main>
+  @if (!session.ready()) {
+    <p class="loading">Loading...</p>
+  } @else {
+    @switch (view()) {
+      @case ('shop') { <app-shop /> }
+      @case ('my-orders') { <app-my-orders /> }
+      @case ('profile') { <app-profile /> }
+      @case ('dashboard') { <app-dashboard /> }
+      @case ('orders') { <app-orders-admin /> }
+      @case ('inventory') { <app-inventory-admin /> }
+      @case ('customers') { <app-customers-admin /> }
+      @case ('staff') { <app-staff-admin /> }
+      @case ('stores') { <app-stores-admin /> }
+    }
+  }
+</main>
+
+<app-cart-panel />
+
+@if (session.authDialog()) {
+  <app-auth-dialog />
+}
+
+<div class="toasts" aria-live="polite">
+  @for (item of toast.toasts(); track item.id) {
+    <div class="toast" [class]="'toast ' + item.kind" role="status">
+      <span>{{ item.text }}</span>
+      <button type="button" class="icon-btn" (click)="toast.dismiss(item.id)" aria-label="Dismiss">×</button>
+    </div>
+  }
+</div>

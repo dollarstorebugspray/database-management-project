@@ -1,0 +1,171 @@
+<div class="page">
+  @if (session.isStaff()) {
+    <div class="notice info staff-note">
+      In-store sale: add items to the cart and choose the customer at checkout. You will be recorded as the salesperson.
+    </div>
+  }
+
+  <div class="shop-layout">
+    <aside class="filters card card-pad" aria-label="Filters">
+      <form (ngSubmit)="applySearch()">
+        <label class="field">
+          Search
+          <input name="search" type="search" [(ngModel)]="searchText" placeholder="Name, brand or category">
+        </label>
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+
+      <label class="field">
+        Category
+        <select [ngModel]="categoryId()" (ngModelChange)="categoryId.set($event)">
+          <option [ngValue]="null">All categories</option>
+          @for (category of catalog.categories(); track category.categoryId) {
+            <option [ngValue]="category.categoryId">{{ category.categoryName }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="field">
+        Price
+        <div class="price-inputs">
+          <input name="minPrice" type="number" min="0" step="0.5" [(ngModel)]="minPrice" (change)="applyPrice()" placeholder="Min" aria-label="Minimum price">
+          <input name="maxPrice" type="number" min="0" step="0.5" [(ngModel)]="maxPrice" (change)="applyPrice()" placeholder="Max" aria-label="Maximum price">
+        </div>
+        @if (priceError()) {
+          <span class="field-error" role="alert">{{ priceError() }}</span>
+        }
+      </div>
+
+      <label class="check">
+        <input type="checkbox" [ngModel]="inStock()" (ngModelChange)="inStock.set($event)">
+        In stock only
+      </label>
+
+      <label class="field">
+        Sort by
+        <select [ngModel]="sort()" (ngModelChange)="sort.set($event)">
+          <option value="name">Name</option>
+          <option value="price_asc">Price, low to high</option>
+          <option value="price_desc">Price, high to low</option>
+          <option value="popular">Best selling</option>
+        </select>
+      </label>
+
+      @if (filtersActive()) {
+        <button class="link-btn" type="button" (click)="clearFilters()">Clear filters</button>
+      }
+    </aside>
+
+    <section class="catalog" aria-live="polite">
+      <div class="catalog-head">
+        <h1>{{ heading() }}</h1>
+        @if (!loading()) {
+          <span class="muted">{{ products().length }} product{{ products().length === 1 ? '' : 's' }}</span>
+        }
+      </div>
+
+      @if (error()) {
+        <div class="notice error">{{ error() }}</div>
+      }
+
+      <div class="product-grid" [class.refreshing]="loading()">
+        @for (product of products(); track product.productId) {
+          <article class="product-card">
+            <button type="button" class="product-tile" (click)="openDetail(product)" [attr.aria-label]="'Details for ' + product.productName">
+              @if (hasImage(product)) {
+                <img [src]="product.imageUrl" alt="" (error)="markBroken(product.productId)">
+              } @else {
+                <span>{{ product.productName.charAt(0) }}</span>
+              }
+            </button>
+            <div class="product-info">
+              <button type="button" class="name-btn" (click)="openDetail(product)">{{ product.productName }}</button>
+              <span class="muted small">{{ product.brand || 'No brand' }} · {{ product.categoryName }}</span>
+              <span class="small" [class.stock-low]="product.quantity > 0 && product.quantity <= 5" [class.stock-out]="product.quantity <= 0">
+                {{ stockLabel(product) }}
+              </span>
+              <div class="product-actions">
+                <strong>{{ product.price | currency }}</strong>
+                @if (cart.quantityOf(product.productId); as inCart) {
+                  <span class="stepper" role="group" [attr.aria-label]="'Quantity of ' + product.productName">
+                    <button type="button" (click)="cart.setQuantity(product.productId, inCart - 1)" aria-label="Remove one">-</button>
+                    <span>{{ inCart }}</span>
+                    <button type="button" [disabled]="inCart >= product.quantity" (click)="add(product)" aria-label="Add one">+</button>
+                  </span>
+                } @else {
+                  <button class="btn btn-sm" type="button" [disabled]="product.quantity <= 0" (click)="add(product)">Add to cart</button>
+                }
+              </div>
+            </div>
+          </article>
+        } @empty {
+          @if (!loading()) {
+            <p class="empty">No products found.</p>
+          }
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+@if (detail(); as product) {
+  <div class="backdrop" (click)="detail.set(null)">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="detail-title" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <h2 id="detail-title">{{ product.productName }}</h2>
+          <span class="muted small">{{ product.brand || 'No brand' }} · {{ product.categoryName }}</span>
+        </div>
+        <button class="icon-btn" type="button" (click)="detail.set(null)" aria-label="Close">×</button>
+      </div>
+      <div class="dialog-body">
+        <div class="detail-top">
+          <div class="detail-image">
+            @if (hasImage(product)) {
+              <img [src]="product.imageUrl" [alt]="product.productName" (error)="markBroken(product.productId)">
+            } @else {
+              <span>{{ product.productName.charAt(0) }}</span>
+            }
+          </div>
+          <div class="detail-buy">
+            <strong class="detail-price">{{ product.price | currency }}</strong>
+            <span [class.stock-low]="product.quantity > 0 && product.quantity <= 5" [class.stock-out]="product.quantity <= 0">
+              {{ stockLabel(product) }} at this store
+            </span>
+            <button class="btn btn-primary" type="button" [disabled]="product.quantity <= cart.quantityOf(product.productId)" (click)="add(product)">
+              Add to cart
+            </button>
+          </div>
+        </div>
+
+        <h3 class="avail-title">Stock at each store</h3>
+        @if (availability(); as rows) {
+          <table class="table">
+            <thead>
+              <tr><th>Store</th><th class="num">In stock</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.storeId) {
+                <tr>
+                  <td>#{{ row.storeId }} {{ row.city }}<span class="sub">{{ row.street }}</span></td>
+                  <td class="num" [class.stock-out]="row.quantity === 0">{{ row.quantity }}</td>
+                  <td class="num">
+                    @if (row.storeId === catalog.storeId()) {
+                      <span class="muted small">This store</span>
+                    } @else if (row.quantity > 0) {
+                      <button class="btn btn-sm" type="button" (click)="shopAt(row.storeId)">Switch</button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="muted">No store carries this product.</td></tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="muted">Loading...</p>
+        }
+      </div>
+    </div>
+  </div>
+}
