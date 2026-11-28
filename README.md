@@ -1,7 +1,8 @@
 Requirements
-Java JDK 25 
-Node.js 22.12 or newer
-MySQL Server 8.0.16 or newer on port 3306, and MySQL Workbench
+
+- Java JDK 25
+- Node.js 22.12 or newer
+- MySQL Server 8.0.16 or newer on port 3306, and MySQL Workbench
 
 1. Set up the database
 
@@ -25,6 +26,7 @@ $env:DB_PASSWORD = "CHOOSE_A_PASSWORD"
 .\mvnw.cmd spring-boot:run
 ```
 Wait for `Started BackendApplication`; http://localhost:8080/api/products should then show product data.
+
 3. Start the frontend
 
 In a second PowerShell window:
